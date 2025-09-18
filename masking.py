@@ -36,10 +36,21 @@ import numpy as np
 # print("2D",x_2D)
 # print("selected elemnet",selected_indices)
 
-a=np.arange(25)
-a_2D=a.reshape(5,5)
-rows=[1,3,4]
-cols=[2,4,0]
-selected=a_2D[rows,cols]
-print("2D",a_2D)
-print("selectd part",selected)
+# a=np.arange(25)
+# a_2D=a.reshape(5,5)
+# rows=[1,3,4]
+# cols=[2,4,0]
+# selected=a_2D[rows,cols]
+# print("2D",a_2D)
+# print("selectd part",selected)
+
+
+#sort
+a=np.array([[13,14],[11,15]])
+arr1=np.sort(a,axis=0)#sorting along row
+print("sorting along row",arr1)
+arr2=np.sort(a,axis=1)#sorting along col
+print("sorting along col",arr2)
+a=np.array([[21,14],[11,15]])
+arr3=np.sort(a,axis=None)#sorting along all element
+print("sorting along all element",arr3)
