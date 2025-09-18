@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Photo Booth</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: #f0f0f0;
+      margin: 0;
+      padding: 20px;
+    }
+    #stage {
+      position: relative;
+      width: 640px;
+      height: 480px;
+      background: #000;
+      overflow: hidden;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+    video, canvas {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .sticker {
+      position: absolute;
+      width: 80px;
+      cursor: move;
+    }
+    #controls {
+      margin-top: 15px;
+    }
+    button {
+      margin: 5px;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    button.primary { background: #4caf50; color: white; }
+    button.secondary { background: #2196f3; color: white; }
+    button.danger { background: #f44336; color: white; }
+  </style>
+</head>
+<body>
+  <h1>📸 Fun Photo Booth</h1>
+  <div id="stage">
+    <video id="video" autoplay playsinline></video>
+    <canvas id="canvas" hidden></canvas>
+  </div>
+
+  <div id="controls">
+    <button id="btnStart" class="primary">Start Camera</button>
+    <input type="file" id="fileInput" accept="image/*" style="display:none" />
+    <button id="btnUpload" class="secondary">Upload Picture</button>
+    <button id="btnCapture" class="secondary">Capture</button>
+    <button id="btnClear" class="danger">Clear Stickers</button>
+  </div>
+
+  <div>
+    <h3>Add Stickers:</h3>
+    <button onclick="addSticker('😎')">😎</button>
+    <button onclick="addSticker('🎉')">🎉</button>
+    <button onclick="addSticker('❤️')">❤️</button>
+  </div>
+
+  <script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const stage = document.getElementById('stage');
+    const ctx = canvas.getContext('2d');
+    let stream;
+
+    async function startCamera() {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+        video.srcObject = stream;
+        video.hidden = false;
+      } catch (err) {
+        alert("⚠️ No camera found or access denied.\n\nTip: If you want, upload a picture instead.");
+        console.warn(err);
+        video.hidden = true;
+      }
+    }
+
+    function addSticker(symbol) {
+      const sticker = document.createElement('div');
+      sticker.className = 'sticker';
+      sticker.textContent = symbol;
+      sticker.style.left = Math.random() * (stage.clientWidth - 80) + 'px';
+      sticker.style.top = Math.random() * (stage.clientHeight - 80) + 'px';
+      stage.appendChild(sticker);
+
+      sticker.onmousedown = function (e) {
+        let shiftX = e.clientX - sticker.getBoundingClientRect().left;
+        let shiftY = e.clientY - sticker.getBoundingClientRect().top;
+        function moveAt(pageX, pageY) {
+          sticker.style.left = pageX - shiftX - stage.getBoundingClientRect().left + 'px';
+          sticker.style.top = pageY - shiftY - stage.getBoundingClientRect().top + 'px';
+        }
+        function onMouseMove(e) { moveAt(e.pageX, e.pageY); }
+        document.addEventListener('mousemove', onMouseMove);
+        sticker.onmouseup = function () {
+          document.removeEventListener('mousemove', onMouseMove);
+          sticker.onmouseup = null;
+        };
+      };
+    }
+
+    function capture() {
+      canvas.width = stage.clientWidth;
+      canvas.height = stage.clientHeight;
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      document.querySelectorAll('.sticker').forEach(sticker => {
+        ctx.font = '50px Arial';
+        ctx.fillText(sticker.textContent, parseInt(sticker.style.left), parseInt(sticker.style.top) + 40);
+      });
+
+      canvas.hidden = false;
+      const link = document.createElement('a');
+      link.download = 'photo.png';
+      link.href = canvas.toDataURL();
+      link.click();
+    }
+
+    function clearStickers() {
+      document.querySelectorAll('.sticker').forEach(s => s.remove());
+    }
+
+    document.getElementById('btnStart').addEventListener('click', startCamera);
+    document.getElementById('btnCapture').addEventListener('click', capture);
+    document.getElementById('btnClear').addEventListener('click', clearStickers);
+
+    // Upload fallback
+    const fileInput = document.getElementById('fileInput');
+    const btnUpload = document.getElementById('btnUpload');
+
+    btnUpload.addEventListener('click', () => fileInput.click());
+
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        video.hidden = true;
+        const img = new Image();
+        img.src = ev.target.result;
+        img.onload = () => {
+          canvas.width = stage.clientWidth;
+          canvas.height = stage.clientHeight;
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          canvas.hidden = false;
+        };
+      };
+      reader.readAsDataURL(file);
+    });
+  </script>
+</body>
+</html>
